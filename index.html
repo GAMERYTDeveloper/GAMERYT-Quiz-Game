@@ -44,7 +44,7 @@
             background-color: #5a14a0;
         }
         .start-screen {
-            display: flex;
+            display: flex !important;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -283,6 +283,13 @@
 </head>
 <body>
     <div class="start-screen">
+        <div class="close">
+            <span class="material-symbols-outlined" onclick="
+            document.querySelector('.start-screen').style.display='none';
+            document.querySelector('.start-screen').style.setProperty('display','none','important');
+            sessionStorage.setItem('startScreenClosed', '1');
+            ">close</span>
+        </div>
         <div class="first">
         <h2>Welcome to GAMERYT Math Quiz</h2>
         <p>Let a teacher if you're at school enter your name</p>
@@ -3558,7 +3565,7 @@
     });
 
 
-
+    // Removed duplicate start/home screen logic to prevent conflicting display settings.
 
 
 
