@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GAMERYT Quiz Game - Education</title>
-    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'none'">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
     <style>
         body {
@@ -390,6 +389,7 @@
         </div>
         <div class="content" id="createContent" style="display: none;">
             <h1>Create</h1>
+            
             <button style="float: right; margin-top: -70px; display: flex; align-items: center; gap: 5px;" class="create-quiz-btn">
             <span class="material-symbols-outlined">add</span>
                 Create Quiz
@@ -1987,12 +1987,13 @@
                     <input type="text" id="adminProfileName" maxlength="30" style="width:100%;padding:8px;margin-top:4px;border-radius:5px;border:1px solid #ccc;">
                 </div>
                 <div>
-                    <label for="adminLanguage" style="font-weight:600;">Language</label>
+                    <label for="adminLanguage" style="font-weight:600;">Language (Broken because will break if reload or close)</label>
                     <select id="adminLanguage" style="width:100%;padding:8px;margin-top:4px;border-radius:5px;border:1px solid #ccc;">
-                        <option value="en">English</option>
-                        <option value="es">Spanish</option>
-                        <option value="fr">French</option>
-                        <option value="de">German</option>
+                      <option disabled value="">Unavailable because will break</option>
+                        <option disabled value="en">English</option>
+                        <option disabled value="es">Spanish</option>
+                        <option disabled value="fr">French</option>
+                        <option disabled value="de">German</option>
                     </select>
                 </div>
                 <div>
@@ -2017,6 +2018,10 @@
                 </div>
                 <div>
                     <button type="button" id="clearHistoryBtn" style="background:#e74c3c;color:#fff;padding:10px 18px;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Clear All History</button>
+                    
+                </div>
+                <div>
+                    <button type="button" id="backupDataBtn" style="background:#3498db;color:#fff;padding:10px 18px;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Backup Data</button>
                 </div>
                 <div style="display:flex;justify-content:flex-end;gap:10px;">
                     <button type="button" id="adminSettingsSave" style="background:#7817d3;color:#fff;padding:10px 24px;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Save</button>
@@ -3935,6 +3940,103 @@
             updateAIAssistIcon();
         });
 
+
+        // --- Backup Modal Logic ---
+        // Create backup modal if not exists
+        let backupModal = document.getElementById("backupModal");
+        if (!backupModal) {
+            backupModal = document.createElement("div");
+            backupModal.id = "backupModal";
+            backupModal.className = "modal";
+            backupModal.style.display = "none";
+            backupModal.innerHTML = `
+            <div class="modal-content" style="max-width:420px;margin:80px auto;padding:28px 18px 18px 18px;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.18);position:relative;">
+                <span id="closeBackupModal" style="position:absolute;top:12px;right:12px;font-size:2rem;cursor:pointer;" class="material-symbols-outlined">close</span>
+                <h3 style="margin-top:0;font-size:1.2rem;color:#7817d3;">Backup & Restore Data</h3>
+                <div style="margin-bottom:18px;">
+                <button id="exportBackupBtn" style="background:#7817d3;color:#fff;padding:10px 18px;border:none;border-radius:8px;font-weight:600;cursor:pointer;margin-bottom:10px;width:100%;">Export Backup</button>
+                <input type="file" id="importBackupInput" accept=".json" style="display:none;">
+                <button id="importBackupBtn" style="background:#3498db;color:#fff;padding:10px 18px;border:none;border-radius:8px;font-weight:600;cursor:pointer;width:100%;">Import Backup</button>
+                </div>
+                <div id="backupStatus" style="font-size:0.98rem;color:#555;"></div>
+            </div>
+            `;
+            document.body.appendChild(backupModal);
+        }
+
+        // Show/hide modal helpers
+        function showBackupModal() {
+            backupModal.style.display = "flex";
+            document.getElementById("backupStatus").textContent = "";
+        }
+        function hideBackupModal() {
+            backupModal.style.display = "none";
+        }
+
+        // Open modal on backup button click
+        document.getElementById("backupDataBtn").onclick = showBackupModal;
+        backupModal.querySelector("#closeBackupModal").onclick = hideBackupModal;
+        backupModal.onclick = function(e) {
+            if (e.target === backupModal) hideBackupModal();
+        };
+
+        // Export backup
+        document.getElementById("exportBackupBtn").onclick = function() {
+            // Collect all relevant data
+            const backup = {
+            schoolProfile: localStorage.getItem("schoolProfile") || null,
+            quizCompleted: localStorage.getItem("quizCompleted") || null,
+            quizCreated: localStorage.getItem("quizCreated") || null,
+            quizHistory: localStorage.getItem("quizHistory") || null,
+            aiAssistantHistory: localStorage.getItem("aiAssistantHistory") || null,
+            achievements: localStorage.getItem("achievements") || null,
+            schoolProfileMeta: localStorage.getItem("schoolProfileMeta") || null,
+            openedMyActivity: localStorage.getItem("openedMyActivity") || null
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "backup.json";
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            }, 100);
+            document.getElementById("backupStatus").textContent = "Backup exported!";
+        };
+
+        // Import backup
+        document.getElementById("importBackupBtn").onclick = function() {
+            document.getElementById("importBackupInput").click();
+        };
+        document.getElementById("importBackupInput").onchange = function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+            try {
+                const data = JSON.parse(evt.target.result);
+                // Restore each key if present
+                if (data.schoolProfile) localStorage.setItem("schoolProfile", data.schoolProfile);
+                if (data.quizCompleted) localStorage.setItem("quizCompleted", data.quizCompleted);
+                if (data.quizCreated) localStorage.setItem("quizCreated", data.quizCreated);
+                if (data.quizHistory) localStorage.setItem("quizHistory", data.quizHistory);
+                if (data.aiAssistantHistory) localStorage.setItem("aiAssistantHistory", data.aiAssistantHistory);
+                if (data.achievements) localStorage.setItem("achievements", data.achievements);
+                if (data.schoolProfileMeta) localStorage.setItem("schoolProfileMeta", data.schoolProfileMeta);
+                if (data.openedMyActivity) localStorage.setItem("openedMyActivity", data.openedMyActivity);
+                document.getElementById("backupStatus").textContent = "Backup imported! Reloading...";
+                setTimeout(() => location.reload(), 1200);
+            } catch (err) {
+                document.getElementById("backupStatus").textContent = "Invalid backup file.";
+            }
+            };
+            reader.readAsText(file);
+        };
+
+
         // Show form values when modal opens
         (function() {
             const modal = document.getElementById("adminSettingsModal");
@@ -3969,4 +4071,3 @@
     </script>
 </body>
 </html>
-
